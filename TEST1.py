@@ -79,20 +79,16 @@ async def start(update, context):
 
 async def sity(update, context):
     await update.message.reply_text("В каком городе вы живёте?:")
-
-    customer_information.write(f"Город: {update.message.text} \n")
-    d = {"Город" : update.message.text}
-    context.bot_data.update(d)
-
-    print(context.bot_data)
+    if filters.TEXT:
+        customer_information.write(f"Город: {update.message.text} \n")
     return 1
 
 
 async def name(update, context):
     await update.message.reply_text("Ваше ФИО:")
-
+    d = {"Город": update.message.text}
     customer_information.write(f"ФИО: {update.message.text} \n")
-    d = {"ФИО": update.message.text}
+
     context.bot_data.update(d)
     return 2
 
@@ -100,7 +96,8 @@ async def name(update, context):
 async def requirement(update, context):
     await update.message.reply_text("Что вам нужно ?", reply_markup=markup)
     customer_information.write(f"Требования: {update.message.text} \n")
-    d = {"Требования": update.message.text}
+    d = {"ФИО": update.message.text}
+
     context.bot_data.update(d)
     return 3
 
@@ -108,7 +105,8 @@ async def requirement(update, context):
 async def description(update, context):
     await update.message.reply_text("Дайте краткое описание.")
     customer_information.write(f"Описание: {update.message.text} \n")
-    d = {"Описание": update.message.text}
+
+    d = {"Требования": update.message.text}
     context.bot_data.update(d)
     return 4
 
@@ -117,7 +115,8 @@ async def choice_of_plastic(update, context):
     await update.message.reply_text("Выберите вид пластика", reply_markup=markup_plastic)
     await update.message.reply_text("Информация о пластиках", reply_markup=InlineKeyboardMarkup(keyboard))
     customer_information.write(f"Пластик: {update.message.text} \n")
-    d = {"Пластик": update.message.text}
+
+    d = {"Описание": update.message.text}
     context.bot_data.update(d)
     return 5
 
@@ -129,6 +128,8 @@ async def choice_of_plastic(update, context):
 
 async def second_response(update, context):
     # Ответ на второй вопрос.
+    d = {"Пластик": update.message.text}
+    context.bot_data.update(d)
     # Мы можем его сохранить в базе данных или переслать куда-либо.
     weather = update.message.text
     logger.info(weather)
@@ -136,10 +137,13 @@ async def second_response(update, context):
     customer_information.close()
     profile = open("customer_information.txt", "r")
     await update.message.reply_text(profile.read())
-    s = [f"{i}: {context.bot_data[i]}" for i in context.bot_data]
-    for i in s:
-        await update.message.reply_text(i)
 
+    s = (f"Город: {context.bot_data["Город"]} \n"
+         f"ФИО: {context.bot_data["ФИО"]} \n"
+         f"Требования: {context.bot_data["Требования"]} \n"
+         f"Описание: {context.bot_data["Описание"]} \n"
+         f"Пластик: {context.bot_data["Пластик"]}")
+    await update.message.reply_text(s)
     return ConversationHandler.END  # Константа, означающая конец диалога.
     # Все обработчики из states и fallbacks становятся неактивными.
 
