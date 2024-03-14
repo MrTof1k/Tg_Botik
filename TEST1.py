@@ -61,7 +61,9 @@ def main():
             2: [MessageHandler(filters.TEXT & ~filters.COMMAND, requirement)],
             3: [MessageHandler(filters.TEXT & ~filters.COMMAND, description)],
             4: [MessageHandler(filters.TEXT & ~filters.COMMAND, choice_of_plastic)],
-            5: [MessageHandler(filters.TEXT & ~filters.COMMAND, second_response)]
+            5: [MessageHandler(filters.TEXT & ~filters.COMMAND, second_response)],
+            6: [MessageHandler(filters.TEXT & ~filters.COMMAND, proverka)]
+
         },
 
         # Точка прерывания диалога. В данном случае — команда /stop.
@@ -144,7 +146,7 @@ async def second_response(update, context):
     weather = update.message.text
     logger.info(weather)
     await update.message.reply_text("Ваша заявка сформирована")
-    customer_information.close()
+    # customer_information.close()
     # profile = open("customer_information.txt", "r")
     # await update.message.reply_text(profile.read())
 
@@ -155,32 +157,37 @@ async def second_response(update, context):
          f"Пластик: {context.bot_data["Пластик"]}")
     await update.message.reply_text(s)
 
-    await application(update, context)
-    return ConversationHandler.END  # Константа, означающая конец диалога.
+    # await application(update, context)
+    # Константа, означающая конец диалога.
+    await update.message.reply_text("Всё верно ?", reply_markup=markup_application)
     # Все обработчики из states и fallbacks становятся неактивными.
+    return 6
 
 
 async def proverka(update, context):
-
-    await application(update, context)
+    if update.message.text == "Да":
+        await application(update, context)
+    if update.message.text == "Заново":
+        await update.message.reply_text("Давайте начнём заново /start")
+    # if update.message.text != "Да" or update.message.text != "Заново":
+    #     await update.message.reply_text("Не корректно введено ")
+    # await application(update, context)
+    return ConversationHandler.END
 
 
 async def application(update, context):
-    await update.message.reply_text("Всё верно ?", reply_markup=markup_application)
-    if update.message.text.lower() == "да":
-        s = (f"Город: {context.bot_data["Город"]} \n"
-             f"ФИО: {context.bot_data["ФИО"]} \n"
-             f"Требования: {context.bot_data["Требования"]} \n"
-             f"Описание: {context.bot_data["Описание"]} \n"
-             f"Пластик: {context.bot_data["Пластик"]}")
-        await context.bot.send_message(
-            chat_id=-4190463347,
-            text=s
-        )
-    elif update.message.text.lower() == "заново":
-        await update.message.reply_text("Давайте начнём заново /start")
-    else:
-        await update.message.reply_text("Не корректно введено ")
+    s = (f"Город: {context.bot_data["Город"]} \n"
+         f"ФИО: {context.bot_data["ФИО"]} \n"
+         f"Требования: {context.bot_data["Требования"]} \n"
+         f"Описание: {context.bot_data["Описание"]} \n"
+         f"Пластик: {context.bot_data["Пластик"]}")
+    await context.bot.send_message(
+        chat_id=-4190463347,
+        text=s
+    )
+    await update.message.reply_text("Заявка успешно отправлена")
+    await stop(update, context)
+
 
 
 async def stop(update, context):
