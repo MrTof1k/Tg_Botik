@@ -2,7 +2,7 @@
 import logging
 import keyboard
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, ConversationHandler, MessageHandler, filters, CommandHandler
+from telegram.ext import Application, ConversationHandler, MessageHandler, filters, CommandHandler, Updater
 from config import BOT_TOKEN
 
 # from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -16,18 +16,22 @@ logger = logging.getLogger(__name__)
 # Сохранение информации для заявки
 customer_information = open("customer_information.txt", "w")
 # кнопки для некоторых вопросов
+# requirement
 reply_keyboard = [['Моделирование и печать'],
                   ['Печать']]
 markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-
-reply_keyboard_strt = [['Да', "Нет"]]
+# start
+reply_keyboard_strt = [['Да', "/stop"]]
 markup_start = ReplyKeyboardMarkup(reply_keyboard_strt, one_time_keyboard=True)
-
+# application
+reply_keyboard_application = [['Да', "Заново"]]
+markup_application = ReplyKeyboardMarkup(reply_keyboard_application, one_time_keyboard=True)
+# pchoice_of_plastic
 reply_keyboard_plastic = [['PLA', 'ABS', 'HIPS', "PVA"],
                           ['SBS', 'NYLON', "FLEX", 'PETG']]
 markup_plastic = ReplyKeyboardMarkup(reply_keyboard_plastic, one_time_keyboard=True)
 
-# кнопки в сообщения бота
+# кнопки в сообщения бота choice_of_plastic
 keyboard = [
     [InlineKeyboardButton("Option 1", url="https://cvetmir3d.ru/blog/poleznoe/vidy-plastika-dlya-3d-printera/")]]
 
@@ -41,6 +45,7 @@ reply_markup = InlineKeyboardMarkup(keyboard)
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("close", close_keyboard))
+
     conv_handler = ConversationHandler(
         # Точка входа в диалог.
         # В данном случае — команда /start. Она задаёт первый вопрос.
@@ -73,11 +78,16 @@ def main():
 async def start(update, context):
     await update.message.reply_text(
         "Привет. Это бот для формирования заявок для 3D печати. \n"
-        "Вы можете прервать заполнение заявки, послав команду /stop.", reply_markup=markup_start)
+        "Вы можете прервать заполнение заявки, послав команду /stop.\n"
+        "Хотите начать заполнение заявки?", reply_markup=markup_start)
     return 0
 
 
 async def sity(update, context):
+    # await update.message.reply_text("dddd")
+    #
+    # user_info = update.message.from_user.to_dict()
+
     await update.message.reply_text("В каком городе вы живёте?:")
     if filters.TEXT:
         customer_information.write(f"Город: {update.message.text} \n")
@@ -135,8 +145,8 @@ async def second_response(update, context):
     logger.info(weather)
     await update.message.reply_text("Ваша заявка сформирована")
     customer_information.close()
-    profile = open("customer_information.txt", "r")
-    await update.message.reply_text(profile.read())
+    # profile = open("customer_information.txt", "r")
+    # await update.message.reply_text(profile.read())
 
     s = (f"Город: {context.bot_data["Город"]} \n"
          f"ФИО: {context.bot_data["ФИО"]} \n"
@@ -144,8 +154,33 @@ async def second_response(update, context):
          f"Описание: {context.bot_data["Описание"]} \n"
          f"Пластик: {context.bot_data["Пластик"]}")
     await update.message.reply_text(s)
+
+    await application(update, context)
     return ConversationHandler.END  # Константа, означающая конец диалога.
     # Все обработчики из states и fallbacks становятся неактивными.
+
+
+async def proverka(update, context):
+
+    await application(update, context)
+
+
+async def application(update, context):
+    await update.message.reply_text("Всё верно ?", reply_markup=markup_application)
+    if update.message.text.lower() == "да":
+        s = (f"Город: {context.bot_data["Город"]} \n"
+             f"ФИО: {context.bot_data["ФИО"]} \n"
+             f"Требования: {context.bot_data["Требования"]} \n"
+             f"Описание: {context.bot_data["Описание"]} \n"
+             f"Пластик: {context.bot_data["Пластик"]}")
+        await context.bot.send_message(
+            chat_id=-4190463347,
+            text=s
+        )
+    elif update.message.text.lower() == "заново":
+        await update.message.reply_text("Давайте начнём заново /start")
+    else:
+        await update.message.reply_text("Не корректно введено ")
 
 
 async def stop(update, context):
@@ -153,15 +188,15 @@ async def stop(update, context):
     return ConversationHandler.END
 
 
-def remove_job_if_exists(name, context):
-    """Удаляем задачу по имени.
-    Возвращаем True если задача была успешно удалена."""
-    current_jobs = context.job_queue.get_jobs_by_name(name)
-    if not current_jobs:
-        return False
-    for job in current_jobs:
-        job.schedule_removal()
-    return True
+# def remove_job_if_exists(name, context):
+#     """Удаляем задачу по имени.
+#     Возвращаем True если задача была успешно удалена."""
+#     current_jobs = context.job_queue.get_jobs_by_name(name)
+#     if not current_jobs:
+#         return False
+#     for job in current_jobs:
+#         job.schedule_removal()
+#     return True
 
 
 async def close_keyboard(update, context):
