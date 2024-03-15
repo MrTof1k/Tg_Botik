@@ -3,7 +3,7 @@ import logging
 import keyboard
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ConversationHandler, MessageHandler, filters, CommandHandler, Updater
-from config import BOT_TOKEN
+from config import BOT_TOKEN, ID_GROUP
 
 # Запускаем логгирование
 logging.basicConfig(
@@ -174,7 +174,7 @@ async def application(update, context):
          f"Описание: {context.bot_data["Описание"]} \n"
          f"Пластик: {context.bot_data["Пластик"]}")
     await context.bot.send_message(
-        chat_id=-4190463347,
+        chat_id=ID_GROUP,
         text=s
     )
     await update.message.reply_text("Заявка успешно отправлена")
