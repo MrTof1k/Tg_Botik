@@ -62,9 +62,10 @@ def main():
             # Функция читает ответ на второй вопрос и завершает диалог.
             2: [MessageHandler(filters.TEXT & ~filters.COMMAND, requirement)],
             3: [MessageHandler(filters.TEXT & ~filters.COMMAND, description)],
-            4: [MessageHandler(filters.TEXT & ~filters.COMMAND, choice_of_plastic)],
-            5: [MessageHandler(filters.TEXT & ~filters.COMMAND, second_response)],
-            6: [MessageHandler(filters.TEXT & ~filters.COMMAND, proverka)]
+            4: [MessageHandler(filters.TEXT & ~filters.COMMAND, descrip_photo)],
+            5: [MessageHandler(filters.PHOTO & ~filters.COMMAND, choice_of_plastic)],
+            6: [MessageHandler(filters.TEXT & ~filters.COMMAND, second_response)],
+            7: [MessageHandler(filters.TEXT & ~filters.COMMAND, proverka)]
 
         },
 
@@ -121,15 +122,23 @@ async def description(update, context):
     return 4
 
 
+async def descrip_photo(update, context):
+    await update.message.reply_text("Пришлите референс желаемой работы.")
+    # customer_information.write(f"Описание: {update.message.text} \n")
+
+    d = {"Описание": update.message.text}
+    context.bot_data.update(d)
+    return 5
+
+
 async def choice_of_plastic(update, context):
     await update.message.reply_text("Выберите вид пластика", reply_markup=markup_plastic)
     await update.message.reply_text("Информация о пластиках", reply_markup=InlineKeyboardMarkup(keyboard))
     # (красивый кнопка)
     # customer_information.write(f"Пластик: {update.message.text} \n")
-
-    d = {"Описание": update.message.text}
+    d = {"Референс": update.message.photo[0].file_id}
     context.bot_data.update(d)
-    return 5
+    return 6
 
 
 async def second_response(update, context):
@@ -142,17 +151,19 @@ async def second_response(update, context):
 
     # формируем одно большое сообщение сюдаже надо приписать пересылку картинки желательно её хранить с id пользователя
     # иначе когда 2 чела одновременно будут делать заявку бот попутает картинки
-    s = (f"Город: {context.bot_data["Город"]} \n"
-         f"ФИО: {context.bot_data["ФИО"]} \n"
-         f"Требования: {context.bot_data["Требования"]} \n"
-         f"Описание: {context.bot_data["Описание"]} \n"
-         f"Пластик: {context.bot_data["Пластик"]}")
+    s = (f"Город: {context.bot_data['Город']} \n"
+         f"ФИО: {context.bot_data['ФИО']} \n"
+         f"Требования: {context.bot_data['Требования']} \n"
+         f"Описание: {context.bot_data['Описание']} \n"
+         f"Пластик: {context.bot_data['Пластик']} \n"
+         f"Референс:")
     await update.message.reply_text(s)
+    await update.message.reply_photo(context.bot_data['Референс'])
 
     # опять раньше спрашиваем тк будет включена след функция
     await update.message.reply_text("Всё верно ?", reply_markup=markup_application)
 
-    return 6
+    return 7
 
 
 # функция костыль (кудаж без них) спрашиваем у пользователя всёли верно если да то присылаем в общий чат если нет,
@@ -168,15 +179,17 @@ async def proverka(update, context):
 
 # функция отправки заявки в общ группу
 async def application(update, context):
-    s = (f"Город: {context.bot_data["Город"]} \n"
-         f"ФИО: {context.bot_data["ФИО"]} \n"
-         f"Требования: {context.bot_data["Требования"]} \n"
-         f"Описание: {context.bot_data["Описание"]} \n"
-         f"Пластик: {context.bot_data["Пластик"]}")
+    s = (f"Город: {context.bot_data['Город']} \n"
+         f"ФИО: {context.bot_data['ФИО']} \n"
+         f"Требования: {context.bot_data['Требования']} \n"
+         f"Описание: {context.bot_data['Описание']} \n"
+         f"Пластик: {context.bot_data['Пластик']} \n"
+         f"Референс:")
     await context.bot.send_message(
         chat_id=ID_GROUP,
         text=s
     )
+    await context.bot.send_photo(ID_GROUP, context.bot_data['Референс'])
     await update.message.reply_text("Заявка успешно отправлена")
     await stop(update, context)
 
@@ -192,15 +205,16 @@ async def close_keyboard(update, context):
         reply_markup=ReplyKeyboardRemove()
     )
 
-#Это Серёжка он держит весь этот код
-#       (•_• )
-# 　　＿ノ ヽ ノ＼ __
-# 　 /　`/ ⌒Ｙ⌒ Ｙ　ヽ
-# 　(　 (三ヽ人　 /　　 |
-# 　|　ﾉ⌒＼ ￣￣ヽ　 ノ
-# 　ヽ＿＿＿＞､＿＿_／
-# 　　　 ｜( 王 ﾉ〈　
-# 　　　 /ﾐ`ー―彡\
+#Это Серёжка, он держит весь этот код
+#       (•_• )                                  ／＞　 　フ А это Барсик
+# 　　＿ノ ヽ ノ＼ __                             |  -  - |    Он поддерживает Серёжку
+# 　 /　`/ ⌒Ｙ⌒ Ｙ　ヽ                          ／` ミ＿xノ
+# 　(　 (三ヽ人　 /　　 |                       /　　　　 |
+# 　|　ﾉ⌒＼ ￣￣ヽ　 ノ                        /　 ヽ　　 ﾉ
+# 　ヽ＿＿＿＞､＿＿_／                         │　　|　|　|
+# 　　　 ｜( 王 ﾉ〈　                      ／￣|　　 |　|　|
+# 　　　 /ﾐ`ー―彡\                       | (￣ヽ＿ヽ) __)
+#                                       ＼二つ
 
 
 if __name__ == '__main__':
