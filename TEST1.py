@@ -5,8 +5,6 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardBut
 from telegram.ext import Application, ConversationHandler, MessageHandler, filters, CommandHandler, Updater
 from config import BOT_TOKEN
 
-# from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 # Запускаем логгирование
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -14,18 +12,23 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 # Сохранение информации для заявки
+# txt файл в который планировалось записывать заявку, но потом начал хранить её в bot_data(гораздо удобней)
+# думаю сюда зааписать сообщение или html для сообщения от бота
 customer_information = open("customer_information.txt", "w")
 # кнопки для некоторых вопросов
 # requirement
 reply_keyboard = [['Моделирование и печать'],
                   ['Печать']]
 markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+
 # start
 reply_keyboard_strt = [['Да', "/stop"]]
 markup_start = ReplyKeyboardMarkup(reply_keyboard_strt, one_time_keyboard=True)
+
 # application
 reply_keyboard_application = [['Да', "Заново"]]
 markup_application = ReplyKeyboardMarkup(reply_keyboard_application, one_time_keyboard=True)
+
 # pchoice_of_plastic
 reply_keyboard_plastic = [['PLA', 'ABS', 'HIPS', "PVA"],
                           ['SBS', 'NYLON', "FLEX", 'PETG']]
@@ -40,8 +43,7 @@ reply_markup = InlineKeyboardMarkup(keyboard)
 
 # Определяем функцию-обработчик сообщений.
 # У неё два параметра, updater, принявший сообщение и контекст - дополнительная информация о сообщении.
-# TIMER = 5
-# таймер на 5 секунд
+
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("close", close_keyboard))
@@ -72,11 +74,10 @@ def main():
 
     application.add_handler(conv_handler)
 
-    # application.add_handler(CommandHandler("set", set_timer))
-    # application.add_handler(CommandHandler("unset", unset))
     application.run_polling()
 
 
+# точка входа в диалог
 async def start(update, context):
     await update.message.reply_text(
         "Привет. Это бот для формирования заявок для 3D печати. \n"
@@ -85,21 +86,18 @@ async def start(update, context):
     return 0
 
 
+# Дальнейшие вопросы для коректного заббора сообщений-ответов нужно вопрос задавать в предыдущей функции
 async def sity(update, context):
-    # await update.message.reply_text("dddd")
-    #
-    # user_info = update.message.from_user.to_dict()
-
     await update.message.reply_text("В каком городе вы живёте?:")
-    if filters.TEXT:
-        customer_information.write(f"Город: {update.message.text} \n")
+    # if filters.TEXT:
+    #   customer_information.write(f"Город: {update.message.text} \n")
     return 1
 
 
 async def name(update, context):
     await update.message.reply_text("Ваше ФИО:")
     d = {"Город": update.message.text}
-    customer_information.write(f"ФИО: {update.message.text} \n")
+    # customer_information.write(f"ФИО: {update.message.text} \n")
 
     context.bot_data.update(d)
     return 2
@@ -107,7 +105,7 @@ async def name(update, context):
 
 async def requirement(update, context):
     await update.message.reply_text("Что вам нужно ?", reply_markup=markup)
-    customer_information.write(f"Требования: {update.message.text} \n")
+    # customer_information.write(f"Требования: {update.message.text} \n")
     d = {"ФИО": update.message.text}
 
     context.bot_data.update(d)
@@ -116,7 +114,7 @@ async def requirement(update, context):
 
 async def description(update, context):
     await update.message.reply_text("Дайте краткое описание.")
-    customer_information.write(f"Описание: {update.message.text} \n")
+    # customer_information.write(f"Описание: {update.message.text} \n")
 
     d = {"Требования": update.message.text}
     context.bot_data.update(d)
@@ -126,30 +124,24 @@ async def description(update, context):
 async def choice_of_plastic(update, context):
     await update.message.reply_text("Выберите вид пластика", reply_markup=markup_plastic)
     await update.message.reply_text("Информация о пластиках", reply_markup=InlineKeyboardMarkup(keyboard))
-    customer_information.write(f"Пластик: {update.message.text} \n")
+    # (красивый кнопка)
+    # customer_information.write(f"Пластик: {update.message.text} \n")
 
     d = {"Описание": update.message.text}
     context.bot_data.update(d)
     return 5
 
 
-# async def application(update, context):
-#     await update.message.reply_text("Приложите фото детали, чертежа или 3D модели.")
-#     return 5
-
-
 async def second_response(update, context):
-    # Ответ на второй вопрос.
     d = {"Пластик": update.message.text}
     context.bot_data.update(d)
-    # Мы можем его сохранить в базе данных или переслать куда-либо.
+
     weather = update.message.text
     logger.info(weather)
     await update.message.reply_text("Ваша заявка сформирована")
-    # customer_information.close()
-    # profile = open("customer_information.txt", "r")
-    # await update.message.reply_text(profile.read())
 
+    # формируем одно большое сообщение сюдаже надо приписать пересылку картинки желательно её хранить с id пользователя
+    # иначе когда 2 чела одновременно будут делать заявку бот попутает картинки
     s = (f"Город: {context.bot_data["Город"]} \n"
          f"ФИО: {context.bot_data["ФИО"]} \n"
          f"Требования: {context.bot_data["Требования"]} \n"
@@ -157,24 +149,24 @@ async def second_response(update, context):
          f"Пластик: {context.bot_data["Пластик"]}")
     await update.message.reply_text(s)
 
-    # await application(update, context)
-    # Константа, означающая конец диалога.
+    # опять раньше спрашиваем тк будет включена след функция
     await update.message.reply_text("Всё верно ?", reply_markup=markup_application)
-    # Все обработчики из states и fallbacks становятся неактивными.
+
     return 6
 
 
+# функция костыль (кудаж без них) спрашиваем у пользователя всёли верно если да то присылаем в общий чат если нет,
+# то всё заново
 async def proverka(update, context):
     if update.message.text == "Да":
         await application(update, context)
     if update.message.text == "Заново":
         await update.message.reply_text("Давайте начнём заново /start")
-    # if update.message.text != "Да" or update.message.text != "Заново":
-    #     await update.message.reply_text("Не корректно введено ")
-    # await application(update, context)
+
     return ConversationHandler.END
 
 
+# функция отправки заявки в общ группу
 async def application(update, context):
     s = (f"Город: {context.bot_data["Город"]} \n"
          f"ФИО: {context.bot_data["ФИО"]} \n"
@@ -189,21 +181,9 @@ async def application(update, context):
     await stop(update, context)
 
 
-
 async def stop(update, context):
     await update.message.reply_text("Всего доброго!")
     return ConversationHandler.END
-
-
-# def remove_job_if_exists(name, context):
-#     """Удаляем задачу по имени.
-#     Возвращаем True если задача была успешно удалена."""
-#     current_jobs = context.job_queue.get_jobs_by_name(name)
-#     if not current_jobs:
-#         return False
-#     for job in current_jobs:
-#         job.schedule_removal()
-#     return True
 
 
 async def close_keyboard(update, context):
@@ -212,24 +192,15 @@ async def close_keyboard(update, context):
         reply_markup=ReplyKeyboardRemove()
     )
 
-
-# Обычный обработчик, как и те, которыми мы пользовались раньше.
-# async def set_timer(update, context):
-#     """Добавляем задачу в очередь"""
-#     chat_id = update.effective_message.chat_id
-#     # Добавляем задачу в очередь
-#     # и останавливаем предыдущую (если она была)
-#     job_removed = remove_job_if_exists(str(chat_id), context)
-#     context.job_queue.run_once(task, TIMER, chat_id=chat_id, name=str(chat_id), data=TIMER)
-#
-#     text = f'Вернусь через 5 с.!'
-#     if job_removed:
-#         text += ' Старая задача удалена.'
-#     await update.effective_message.reply_text(text)
-
-# async def task(context):
-#     """Выводит сообщение"""
-#     await context.bot.send_message(context.job.chat_id, text=f'КУКУ! 5c. прошли!')
+#Это Серёжка он держит весь этот код
+#       (•_• )
+# 　　＿ノ ヽ ノ＼ __
+# 　 /　`/ ⌒Ｙ⌒ Ｙ　ヽ
+# 　(　 (三ヽ人　 /　　 |
+# 　|　ﾉ⌒＼ ￣￣ヽ　 ノ
+# 　ヽ＿＿＿＞､＿＿_／
+# 　　　 ｜( 王 ﾉ〈　
+# 　　　 /ﾐ`ー―彡\
 
 
 if __name__ == '__main__':
